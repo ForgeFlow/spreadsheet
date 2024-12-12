@@ -9,7 +9,6 @@
                 aria-label="Add to spreadsheet"
                 t-attf-disabled="{{noDataDisplayed ? 'disabled' : false}}"
             />
-
         </xpath>
     </t>
 </templates>

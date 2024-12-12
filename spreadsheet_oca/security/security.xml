@@ -2,7 +2,6 @@
 <!-- Copyright 2022 CreuBlanca
      License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl). -->
 <odoo>
-
     <record model="ir.module.category" id="module_category_spreedsheet">
         <field name="name">Spreadsheet</field>
         <field name="sequence">99</field>

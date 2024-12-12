@@ -3,8 +3,8 @@
 
     <t t-name="spreadsheet_oca.ActionSpreadsheetOca" owl="1">
         <div class="o_spreadsheet_oca_container">
-        <SpreadsheetControlPanel record="record" />
-        <SpreadsheetRenderer
+            <SpreadsheetControlPanel record="record" />
+            <SpreadsheetRenderer
                 record="record"
                 res_id="spreadsheetId"
                 model="model"
@@ -26,8 +26,8 @@
             <div class="o_spreadsheet_oca_datasource_panel_field">
                 <div class="o_spreadsheet_oca_datasource_panel_field_title">Model</div>
                 <div><t t-esc="modelLabel" /> (<t
-                        t-esc="props.pivotDefinition.model"
-                    />)</div>
+                    t-esc="props.pivotDefinition.model"
+                />)</div>
             </div>
             <div class="o_spreadsheet_oca_datasource_panel_field">
                 <div class="o_spreadsheet_oca_datasource_panel_field_title">Domain</div>
@@ -83,7 +83,6 @@
                 >Insert dynamic pivot</button>
             </div>
         </div>
-
     </t>
 
     <t t-name="spreadsheet_oca.ListPanel" owl="1">
@@ -100,8 +99,8 @@
             <div class="o_spreadsheet_oca_datasource_panel_field">
                 <div class="o_spreadsheet_oca_datasource_panel_field_title">Model</div>
                 <div><t t-esc="modelLabel" /> (<t
-                        t-esc="props.listDefinition.model"
-                    />)</div>
+                    t-esc="props.listDefinition.model"
+                />)</div>
             </div>
             <div class="o_spreadsheet_oca_datasource_panel_field">
                 <div class="o_spreadsheet_oca_datasource_panel_field_title">Domain</div>
@@ -118,7 +117,6 @@
                 Last updated at <t t-esc="lastUpdate" />
             </div>
         </div>
-
     </t>
     <t t-name="spreadsheet_oca.FilterPanel" owl="1">
         <div
@@ -421,11 +419,11 @@
                 <label>
                     <div class="o_checkbox">
                         <input
-                            type="checkbox"
-                            name="stacked"
-                            t-att-checked="props.definition.stacked"
-                            t-on-change="onChangeStacked"
-                        />
+                        type="checkbox"
+                        name="stacked"
+                        t-att-checked="props.definition.stacked"
+                        t-on-change="onChangeStacked"
+                    />
                         Stacked
                     </div>
                 </label>

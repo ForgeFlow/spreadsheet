@@ -2,14 +2,11 @@
 <!-- Copyright 2022 CreuBlanca
      License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl). -->
 <odoo>
-
     <record model="ir.ui.view" id="spreadsheet_spreadsheet_search_view">
         <field name="name">spreadsheet.spreadsheet.search (in spreadsheet_oca)</field>
         <field name="model">spreadsheet.spreadsheet</field>
         <field name="arch" type="xml">
-            <search>
-
-            </search>
+            <search />
         </field>
     </record>
 
@@ -78,5 +75,4 @@
         <field name="groups_id" eval="[(4, ref('spreadsheet_oca.group_user'))]" />
         <field name="sequence" eval="16" />
     </record>
-
 </odoo>

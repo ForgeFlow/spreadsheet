@@ -7,6 +7,5 @@
             type="base64"
             file="spreadsheet_oca/demo/demo_spreadsheet.json"
         />
-
     </record>
 </odoo>
