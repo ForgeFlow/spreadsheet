@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <templates xml:space="preserve">
-    <t t-inherit="web.PivotView.Buttons" t-inherit-mode="extension" owl="1">
+    <t t-inherit="web.PivotView.Buttons" t-inherit-mode="extension">
         <xpath expr="//button[hasclass('o_pivot_download')]" position="after">
             <div t-att-data-tooltip="getSpreadsheetInsertionTooltip()">
                 <button

@@ -1,18 +1,18 @@
 /** @odoo-module **/
 
 import {Component} from "@odoo/owl";
-import {DataSources} from "@spreadsheet/data_sources/data_sources";
-import Dialog from "web.OwlDialog";
+import {OdooDataProvider} from "@spreadsheet/data_sources/odoo_data_provider";
+import Dialog from "@web/core/dialog/dialog";
 import {Field} from "@web/views/fields/field";
-import {loadSpreadsheetDependencies} from "@spreadsheet/helpers/helpers";
-import {migrate} from "@spreadsheet/o_spreadsheet/migration";
-import spreadsheet from "@spreadsheet/o_spreadsheet/o_spreadsheet_extended";
+import {loadSpreadsheetDependencies} from "@spreadsheet/assets_backend/helpers";
+import * as spreadsheet from "@odoo/o-spreadsheet";
 import {useService} from "@web/core/utils/hooks";
-import {useSetupAction} from "@web/webclient/actions/action_hook";
+import {useSetupAction} from "@web/search/action_hook";
 import {waitForDataLoaded} from "@spreadsheet/actions/spreadsheet_download_action";
 
 const {Spreadsheet, Model} = spreadsheet;
 const {useSubEnv, useState, onWillStart} = owl;
+import {user} from "@web/core/user";
 const uuidGenerator = new spreadsheet.helpers.UuidGenerator();
 
 class SpreadsheetTransportService {
@@ -57,11 +57,10 @@ class SpreadsheetTransportService {
 export class SpreadsheetRenderer extends Component {
     setup() {
         this.orm = useService("orm");
-        this.bus_service = useService("bus_service");
-        this.user = useService("user");
+        this.bus_service = this.env.services.bus_service;
         this.ui = useService("ui");
         this.action = useService("action");
-        const dataSources = new DataSources(this.orm);
+        const odooDataProvider = new OdooDataProvider(this.env);
         this.state = useState({
             dialogDisplayed: false,
             dialogTitle: "Spreadsheet",
@@ -69,7 +68,7 @@ export class SpreadsheetRenderer extends Component {
         });
         this.confirmDialog = this.closeDialog;
         this.spreadsheet_model = new Model(
-            migrate(this.props.record.spreadsheet_raw),
+            this.props.record.spreadsheet_raw,
             {
                 evalContext: {env: this.env, orm: this.orm},
                 transportService: new SpreadsheetTransportService(
@@ -80,10 +79,10 @@ export class SpreadsheetRenderer extends Component {
                 ),
                 client: {
                     id: uuidGenerator.uuidv4(),
-                    name: this.user.name,
+                    name: user.name,
                 },
                 mode: this.props.record.mode,
-                dataSources,
+                odooDataProvider,
             },
             this.props.record.revisions
         );
@@ -95,13 +94,14 @@ export class SpreadsheetRenderer extends Component {
         });
         onWillStart(async () => {
             await loadSpreadsheetDependencies();
-            await dataSources.waitForAllLoaded();
+            debugger;
+            // Await odooDataProvider.waitForAllLoaded();
             await this.env.importData(this.spreadsheet_model);
         });
         useSetupAction({
             beforeLeave: () => this.onSpreadsheetSaved(),
         });
-        dataSources.addEventListener("data-source-updated", () => {
+        odooDataProvider.addEventListener("data-source-updated", () => {
             const sheetId = this.spreadsheet_model.getters.getActiveSheetId();
             this.spreadsheet_model.dispatch("EVALUATE_CELLS", {sheetId});
         });

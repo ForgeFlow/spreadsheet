@@ -1,14 +1,14 @@
 /** @odoo-module **/
 
 import {Component, onWillStart, useState} from "@odoo/owl";
-import {_lt, _t} from "web.core";
+import {_lt, _t} from "@web/core/l10n/translation";
 
 import {FilterValue} from "@spreadsheet/global_filters/components/filter_value/filter_value";
 import {ModelFieldSelector} from "@web/core/model_field_selector/model_field_selector";
 import {ModelSelector} from "@web/core/model_selector/model_selector";
 import {RELATIVE_DATE_RANGE_TYPES} from "@spreadsheet/helpers/constants";
 import {globalFiltersFieldMatchers} from "@spreadsheet/global_filters/plugins/global_filters_core_plugin";
-import spreadsheet from "@spreadsheet/o_spreadsheet/o_spreadsheet_extended";
+import * as spreadsheet from "@odoo/o-spreadsheet";
 import {useService} from "@web/core/utils/hooks";
 
 const {topbarMenuRegistry} = spreadsheet.registries;
@@ -152,7 +152,11 @@ export class EditFilterPanel extends Component {
             filterMatching[object.type] = filterMatching[object.type] || {};
             filterMatching[object.type][object.objectId] = {...object.fieldMatch};
         });
-        this.env.model.dispatch(action, {id: filter.id, filter, ...filterMatching});
+        this.env.model.dispatch(action, {
+            id: filter.id,
+            filter,
+            ...filterMatching,
+        });
 
         this.env.openSidePanel("FilterPanel", {});
     }
@@ -161,7 +165,9 @@ export class EditFilterPanel extends Component {
     }
     onRemove() {
         if (this.props.filter.id) {
-            this.env.model.dispatch("REMOVE_GLOBAL_FILTER", {id: this.props.filter.id});
+            this.env.model.dispatch("REMOVE_GLOBAL_FILTER", {
+                id: this.props.filter.id,
+            });
         }
         this.env.openSidePanel("FilterPanel", {});
     }

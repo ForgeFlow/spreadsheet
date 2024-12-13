@@ -4,19 +4,18 @@ import {Component, onWillStart, onWillUpdateProps} from "@odoo/owl";
 import {Domain} from "@web/core/domain";
 import {DomainSelector} from "@web/core/domain_selector/domain_selector";
 import {DomainSelectorDialog} from "@web/core/domain_selector_dialog/domain_selector_dialog";
-import {_t} from "web.core";
-import spreadsheet from "@spreadsheet/o_spreadsheet/o_spreadsheet_extended";
-import {time_to_str} from "web.time";
+import {_t} from "@web/core/l10n/translation";
+import * as spreadsheet from "@odoo/o-spreadsheet";
+import {formatDateTime} from "@web/core/l10n/dates";
 import {useService} from "@web/core/utils/hooks";
 import {FormViewDialog} from "@web/views/view_dialogs/form_view_dialog";
-import {makeDynamicCols, makeDynamicRows} from "../utils/dynamic_generators.esm";
-
+import {makeDynamicRows} from "../utils/dynamic_generators.esm";
 const {sidePanelRegistry, topbarMenuRegistry} = spreadsheet.registries;
 const {createFullMenuItem} = spreadsheet.helpers;
 
 topbarMenuRegistry.addChild("data_sources", ["data"], (env) => {
     const children = env.model.getters.getPivotIds().map((pivotId, index) =>
-        createFullMenuItem(`data_source_pivot_ ${pivotId}`, {
+        createFullMenuItem(`data_source_pivot_${pivotId}`, {
             name: env.model.getters.getPivotDisplayName(pivotId),
             sequence: 100,
             action: (child_env) => {
@@ -87,7 +86,7 @@ export class PivotPanelDisplay extends Component {
     get lastUpdate() {
         const lastUpdate = this.PivotDataSource.lastUpdate;
         if (lastUpdate) {
-            return time_to_str(new Date(lastUpdate));
+            return formatDateTime(new Date(lastUpdate), {format: "HH:mm:ss"});
         }
         return _t("not updated");
     }
@@ -127,50 +126,30 @@ export class PivotPanelDisplay extends Component {
             .getPivotDataSource(this.props.pivotId)
             .copyModelWithOriginalDomain();
         var {cols, rows, measures} = datasourceModel.getTableStructure().export();
-        const {dynamic_rows, number_of_rows, dynamic_cols, number_of_cols} =
-            await new Promise((resolve) => {
-                this.dialog.add(
-                    FormViewDialog,
-                    {
-                        title: this.env._t("Select the quantity of rows"),
-                        resModel: "spreadsheet.select.row.number",
-                        context: {
-                            default_can_have_dynamic_cols: Boolean(
-                                cols[0][0].fields.length
-                            ),
-                        },
-                        onRecordSaved: async (record) => {
-                            resolve({
-                                dynamic_rows: record.data.dynamic_rows,
-                                number_of_rows: record.data.number_of_rows,
-                                dynamic_cols: record.data.dynamic_cols,
-                                number_of_cols: record.data.number_of_cols,
-                            });
-                        },
+        const number_of_rows = await new Promise((resolve) => {
+            this.dialog.add(
+                FormViewDialog,
+                {
+                    title: this.env._t("Select the quantity of rows"),
+                    resModel: "spreadsheet.select.row.number",
+                    onRecordSaved: async (record) => {
+                        resolve(record.data.number_of_rows);
                     },
-                    {onClose: () => resolve(false)}
-                );
-            });
-        if (!dynamic_rows && !dynamic_cols) {
+                },
+                {onClose: () => resolve(false)}
+            );
+        });
+        if (!number_of_rows) {
             return;
         }
-        if (dynamic_rows) {
-            const indentations = rows.map((r) => r.indent);
-            const max_indentation = Math.max(...indentations);
-            rows = makeDynamicRows(
-                this.props.pivotDefinition.rowGroupBys,
-                number_of_rows,
-                1,
-                max_indentation
-            );
-        }
-        if (dynamic_cols) {
-            cols = makeDynamicCols(
-                this.props.pivotDefinition.colGroupBys,
-                number_of_cols,
-                this.props.pivotDefinition.measures
-            );
-        }
+        const indentations = rows.map((r) => r.indent);
+        const max_indentation = Math.max(...indentations);
+        rows = makeDynamicRows(
+            this.props.pivotDefinition.rowGroupBys,
+            number_of_rows,
+            1,
+            max_indentation
+        );
         const table = {
             cols,
             rows,
@@ -234,7 +213,7 @@ export class ListPanelDisplay extends Component {
     get lastUpdate() {
         const lastUpdate = this.ListDataSource.lastUpdate;
         if (lastUpdate) {
-            return time_to_str(new Date(lastUpdate));
+            return formatDateTime(new Date(lastUpdate), {format: "HH:mm:ss"});
         }
         return _t("not updated");
     }

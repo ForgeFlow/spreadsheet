@@ -1,13 +1,13 @@
 /** @odoo-module **/
 
-import {makeDynamicCols, makeDynamicRows} from "../utils/dynamic_generators.esm";
-import ListDataSource from "@spreadsheet/list/list_data_source";
-import PivotDataSource from "@spreadsheet/pivot/pivot_data_source";
-import {SpreadsheetControlPanel} from "./spreadsheet_controlpanel.esm";
+import {ListDataSource} from "@spreadsheet/list/list_data_source";
 import {SpreadsheetRenderer} from "./spreadsheet_renderer.esm";
 import {registry} from "@web/core/registry";
-import spreadsheet from "@spreadsheet/o_spreadsheet/o_spreadsheet_extended";
+import * as spreadsheet from "@odoo/o-spreadsheet";
 import {useService} from "@web/core/utils/hooks";
+import {router} from "@web/core/browser/router";
+import {makeDynamicRows} from "../utils/dynamic_generators.esm";
+import {OdooDataProvider} from "@spreadsheet/data_sources/odoo_data_provider";
 
 const uuidGenerator = new spreadsheet.helpers.UuidGenerator();
 const actionRegistry = registry.category("actions");
@@ -15,29 +15,26 @@ const {Component, onMounted, onWillStart, useSubEnv} = owl;
 
 export class ActionSpreadsheetOca extends Component {
     setup() {
-        this.router = useService("router");
         this.orm = useService("orm");
+        debugger;
         const params = this.props.action.params || this.props.action.context.params;
         this.spreadsheetId = params.spreadsheet_id;
         this.model = params.model || "spreadsheet.spreadsheet";
         this.import_data = params.import_data || {};
         onMounted(() => {
-            this.router.pushState({
+            router.pushState({
                 spreadsheet_id: this.spreadsheetId,
                 model: this.model,
             });
         });
         onWillStart(async () => {
-            // We need to load in case the data comes from an XLSX
             this.record =
-                spreadsheet.load(
-                    await this.orm.call(
-                        this.model,
-                        "get_spreadsheet_data",
-                        [[this.spreadsheetId]],
-                        {context: {bin_size: false}}
-                    )
-                ) || {};
+                (await this.orm.call(
+                    this.model,
+                    "get_spreadsheet_data",
+                    [[this.spreadsheetId]],
+                    {context: {bin_size: false}}
+                )) || {};
         });
         useSubEnv({
             saveRecord: this.saveRecord.bind(this),
@@ -52,28 +49,10 @@ export class ActionSpreadsheetOca extends Component {
             this.orm.call(this.model, "write", [this.spreadsheetId, data]);
         } else {
             this.spreadsheetId = await this.orm.call(this.model, "create", [data]);
-            this.router.pushState({spreadsheet_id: this.spreadsheetId});
+            router.pushState({spreadsheet_id: this.spreadsheetId});
         }
     }
-    /**
-     * Clean SearchParams of conflictive keys.
-     *
-     * 1. Removed from context pivot conflictive keys.
-     * 2. Removed from context graph conflictive keys.
-     *
-     * @returns {Object}       Formated searchParams.
-     */
-    cleanSearchParams() {
-        const searchParams = this.import_data.searchParams;
-        const context = {};
-        for (var key of Object.keys(searchParams.context)) {
-            if (key.startsWith("pivot_") || key.startsWith("graph_")) {
-                continue;
-            }
-            context[key] = searchParams.context[key];
-        }
-        return {...searchParams, context};
-    }
+
     async importDataGraph(spreadsheet_model) {
         var sheetId = spreadsheet_model.getters.getActiveSheetId();
         var y = 0;
@@ -99,7 +78,7 @@ export class ActionSpreadsheetOca extends Component {
             background: "#FFFFFF",
             stacked: this.import_data.metaData.stacked,
             metaData: this.import_data.metaData,
-            searchParams: this.cleanSearchParams(),
+            searchParams: this.import_data.searchParams,
             dataSourceId: dataSourceId,
             legendPosition: "top",
             verticalAxisPosition: "left",
@@ -153,7 +132,7 @@ export class ActionSpreadsheetOca extends Component {
         }
         return {sheetId, row};
     }
-    async importDataList(spreadsheet_model) {
+    async importDataList(spreadsheet_model, stores) {
         var {sheetId, row} = this.importCreateOrReuseSheet(spreadsheet_model);
         const dataSourceId = uuidGenerator.uuidv4();
         var list_info = {
@@ -169,18 +148,24 @@ export class ActionSpreadsheetOca extends Component {
             },
             name: this.import_data.name,
         };
-        const dataSource = spreadsheet_model.config.dataSources.add(
-            dataSourceId,
-            ListDataSource,
-            list_info
-        );
-        await dataSource.load();
-        spreadsheet_model.dispatch("INSERT_ODOO_LIST", {
+        ListDataSource;
+        spreadsheet_model;
+        debugger;
+        // Const dataSource = spreadsheet_model.config.dataSources.add(
+        //   dataSourceId,
+        //   ListDataSource,
+        //   list_info
+        // );
+        // await dataSource.load();
+        const odooDataProvider = new OdooDataProvider(this.env);
+        odooDataProvider.addEventListener("data-source-updated", () => {
+            this.model.dispatch("EVALUATE_CELLS");
+        });
+        spreadsheet_model.dispatch("INSERT_ODOO_LIST_WITH_TABLE", {
             sheetId,
             col: 0,
             row: row,
             id: spreadsheet_model.getters.getNextListId(),
-            dataSourceId,
             definition: list_info,
             linesNumber: this.import_data.dyn_number_of_rows,
             columns: this.import_data.metaData.columns,
@@ -189,7 +174,10 @@ export class ActionSpreadsheetOca extends Component {
         for (let col = 0; col < this.import_data.metaData.columns.length; col++) {
             columns.push(col);
         }
-        spreadsheet_model.dispatch("AUTORESIZE_COLUMNS", {sheetId, cols: columns});
+        spreadsheet_model.dispatch("AUTORESIZE_COLUMNS", {
+            sheetId,
+            cols: columns,
+        });
     }
     async importDataPivot(spreadsheet_model) {
         var {sheetId, row} = this.importCreateOrReuseSheet(spreadsheet_model);
@@ -208,12 +196,11 @@ export class ActionSpreadsheetOca extends Component {
                 resModel: this.import_data.metaData.resModel,
                 sortedColumn: this.import_data.metaData.sortedColumn,
             },
-            searchParams: this.cleanSearchParams(),
+            searchParams: this.import_data.searchParams,
             name: this.import_data.name,
         };
         const dataSource = spreadsheet_model.config.dataSources.add(
             dataSourceId,
-            PivotDataSource,
             pivot_info
         );
         await dataSource.load();
@@ -226,13 +213,6 @@ export class ActionSpreadsheetOca extends Component {
                 this.import_data.dyn_number_of_rows,
                 1,
                 max_indentation
-            );
-        }
-        if (this.import_data.dyn_number_of_cols) {
-            cols = makeDynamicCols(
-                colGroupBys,
-                this.import_data.dyn_number_of_cols,
-                this.import_data.metaData.activeMeasures
             );
         }
         const table = {
@@ -253,7 +233,10 @@ export class ActionSpreadsheetOca extends Component {
         for (let col = 0; col < table.cols[table.cols.length - 1].length; col++) {
             columns.push(col);
         }
-        spreadsheet_model.dispatch("AUTORESIZE_COLUMNS", {sheetId, cols: columns});
+        spreadsheet_model.dispatch("AUTORESIZE_COLUMNS", {
+            sheetId,
+            cols: columns,
+        });
     }
     async importData(spreadsheet_model) {
         if (this.import_data.mode === "pivot") {
@@ -270,6 +253,8 @@ export class ActionSpreadsheetOca extends Component {
 ActionSpreadsheetOca.template = "spreadsheet_oca.ActionSpreadsheetOca";
 ActionSpreadsheetOca.components = {
     SpreadsheetRenderer,
-    SpreadsheetControlPanel,
+    // SpreadsheetControlPanel,
 };
-actionRegistry.add("action_spreadsheet_oca", ActionSpreadsheetOca, {force: true});
+actionRegistry.add("action_spreadsheet_oca", ActionSpreadsheetOca, {
+    force: true,
+});
