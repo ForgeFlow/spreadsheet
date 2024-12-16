@@ -1,18 +1,18 @@
 /** @odoo-module **/
 
-import {Component} from "@odoo/owl";
-import {OdooDataProvider} from "@spreadsheet/data_sources/odoo_data_provider";
+import { Component } from "@odoo/owl";
+import { OdooDataProvider } from "@spreadsheet/data_sources/odoo_data_provider";
 import Dialog from "@web/core/dialog/dialog";
-import {Field} from "@web/views/fields/field";
-import {loadSpreadsheetDependencies} from "@spreadsheet/assets_backend/helpers";
+import { Field } from "@web/views/fields/field";
+import { loadSpreadsheetDependencies } from "@spreadsheet/assets_backend/helpers";
 import * as spreadsheet from "@odoo/o-spreadsheet";
-import {useService} from "@web/core/utils/hooks";
-import {useSetupAction} from "@web/search/action_hook";
-import {waitForDataLoaded} from "@spreadsheet/actions/spreadsheet_download_action";
+import { useService } from "@web/core/utils/hooks";
+import { useSetupAction } from "@web/search/action_hook";
+import { waitForDataLoaded } from "@spreadsheet/actions/spreadsheet_download_action";
 
-const {Spreadsheet, Model} = spreadsheet;
-const {useSubEnv, useState, onWillStart} = owl;
-import {user} from "@web/core/user";
+const { Spreadsheet, Model } = spreadsheet;
+const { useSubEnv, useState, onWillStart } = owl;
+import { user } from "@web/core/user";
 const uuidGenerator = new spreadsheet.helpers.UuidGenerator();
 
 class SpreadsheetTransportService {
@@ -29,15 +29,15 @@ class SpreadsheetTransportService {
         );
         this.listeners = [];
     }
-    onNotification({detail: notifications}) {
-        for (const {payload, type} of notifications) {
+    onNotification({ detail: notifications }) {
+        for (const { payload, type } of notifications) {
             if (
                 type === "spreadsheet_oca" &&
                 payload.res_model === this.model &&
                 payload.res_id === this.res_id
             ) {
                 // What shall we do if no callback is defined (empty until onNewMessage...) :/
-                for (const {callback} of this.listeners) {
+                for (const { callback } of this.listeners) {
                     callback(payload);
                 }
             }
@@ -47,7 +47,7 @@ class SpreadsheetTransportService {
         this.orm.call(this.model, "send_spreadsheet_message", [[this.res_id], message]);
     }
     onNewMessage(id, callback) {
-        this.listeners.push({id, callback});
+        this.listeners.push({ id, callback });
     }
     leave(id) {
         this.listeners = this.listeners.filter((listener) => listener.id !== id);
@@ -60,7 +60,6 @@ export class SpreadsheetRenderer extends Component {
         this.bus_service = this.env.services.bus_service;
         this.ui = useService("ui");
         this.action = useService("action");
-        const odooDataProvider = new OdooDataProvider(this.env);
         this.state = useState({
             dialogDisplayed: false,
             dialogTitle: "Spreadsheet",
@@ -70,7 +69,7 @@ export class SpreadsheetRenderer extends Component {
         this.spreadsheet_model = new Model(
             this.props.record.spreadsheet_raw,
             {
-                evalContext: {env: this.env, orm: this.orm},
+                evalContext: { env: this.env, orm: this.orm },
                 transportService: new SpreadsheetTransportService(
                     this.orm,
                     this.bus_service,
@@ -82,7 +81,6 @@ export class SpreadsheetRenderer extends Component {
                     name: user.name,
                 },
                 mode: this.props.record.mode,
-                odooDataProvider,
             },
             this.props.record.revisions
         );
@@ -94,16 +92,17 @@ export class SpreadsheetRenderer extends Component {
         });
         onWillStart(async () => {
             await loadSpreadsheetDependencies();
-            debugger;
+            const odooDataProvider = new OdooDataProvider(this.env);
+            odooDataProvider.addEventListener("data-source-updated", () => {
+                const sheetId = this.spreadsheet_model.getters.getActiveSheetId();
+                this.spreadsheet_model.dispatch("EVALUATE_CELLS", { sheetId });
+            });
+            this.spreadsheet_model.odooDataProvider = odooDataProvider
             // Await odooDataProvider.waitForAllLoaded();
-            await this.env.importData(this.spreadsheet_model);
+            await this.env.importData(this.spreadsheet_model, this.state);
         });
         useSetupAction({
             beforeLeave: () => this.onSpreadsheetSaved(),
-        });
-        odooDataProvider.addEventListener("data-source-updated", () => {
-            const sheetId = this.spreadsheet_model.getters.getActiveSheetId();
-            this.spreadsheet_model.dispatch("EVALUATE_CELLS", {sheetId});
         });
     }
     closeDialog() {
@@ -114,7 +113,7 @@ export class SpreadsheetRenderer extends Component {
     }
     onSpreadsheetSaved() {
         const data = this.spreadsheet_model.exportData();
-        this.env.saveRecord({spreadsheet_raw: data});
+        this.env.saveRecord({ spreadsheet_raw: data });
         this.spreadsheet_model.leaveSession();
     }
     editText(title, callback, options) {
@@ -158,7 +157,7 @@ SpreadsheetRenderer.components = {
 };
 SpreadsheetRenderer.props = {
     record: Object,
-    res_id: {type: Number, optional: true},
+    res_id: { type: Number, optional: true },
     model: String,
-    importData: {type: Function, optional: true},
+    importData: { type: Function, optional: true },
 };

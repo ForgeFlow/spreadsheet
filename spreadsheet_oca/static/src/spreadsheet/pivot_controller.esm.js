@@ -1,11 +1,11 @@
 /** @odoo-module **/
 
-import {_lt} from "@web/core/l10n/translation";
+import {_t} from "@web/core/l10n/translation";
 import {PivotController} from "@web/views/pivot/pivot_controller";
-
+import { PivotRenderer } from "@web/views/pivot/pivot_renderer";
 import {patch} from "@web/core/utils/patch";
 
-patch(PivotController.prototype, {
+patch(PivotRenderer.prototype, {
     isComparingInfo() {
         return Boolean(this.model.searchParams.comparison);
     },
@@ -31,11 +31,11 @@ patch(PivotController.prototype, {
         );
     },
     getSpreadsheetInsertionTooltip() {
-        var message = _lt("Add to spreadsheet");
+        var message = _t("Add to spreadsheet");
         if (this.containsDuplicatedGroupBys()) {
-            message = _lt("Duplicated groupbys in pivot are not supprted");
+            message = _t("Duplicated groupbys in pivot are not supprted");
         } else if (this.isComparingInfo()) {
-            message = _lt("Comparisons in pivot are not supprted");
+            message = _t("Comparisons in pivot are not supprted");
         }
         return message;
     },
