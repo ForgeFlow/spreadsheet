@@ -7,7 +7,7 @@ from odoo.exceptions import ValidationError
 
 class SpreadsheetDashboard(models.Model):
     _name = "spreadsheet.dashboard"
-    _inherit = ["spreadsheet.dashboard", "spreadsheet.abstract"]
+    _inherit = ("spreadsheet.dashboard", "spreadsheet.abstract")
 
     active = fields.Boolean(default=True)
     can_edit = fields.Boolean(compute="_compute_can_edit", search="_search_can_edit")

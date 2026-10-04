@@ -1,0 +1,1 @@
+odoo-addon-spreadsheet_oca @ git+https://github.com/ForgeFlow/spreadsheet@20.0-mig-spreadsheet_oca#subdirectory=spreadsheet_oca

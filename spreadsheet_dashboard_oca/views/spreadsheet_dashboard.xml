@@ -29,7 +29,7 @@
                     name="open_spreadsheet"
                     type="object"
                     string="Edit"
-                    icon="fa-pencil"
+                    icon="edit"
                     disabled="1"
                     groups="base.group_system"
                     invisible="can_edit"
@@ -38,7 +38,7 @@
                     name="open_spreadsheet"
                     type="object"
                     string="Edit"
-                    icon="fa-pencil"
+                    icon="edit"
                     groups="base.group_system"
                     invisible="not can_edit"
                 />
@@ -46,7 +46,7 @@
                     name="copy"
                     type="object"
                     string="Copy"
-                    icon="fa-copy"
+                    icon="content_copy"
                     groups="base.group_system"
                 />
                 <field name="active" widget="boolean_toggle" />
